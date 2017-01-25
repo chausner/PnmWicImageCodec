@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  
+<?define ProductVersion="!(bind.FileVersion.PnmWicImageCodecDll)"?>
+    
+	<Product Id="*" Name="PNM WIC Image Codec" Language="1033" Version="$(var.ProductVersion)" Manufacturer="Christoph Hausner" UpgradeCode="a7c06bb4-88f0-433a-8aaf-994db89d0d0d">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <!--<Property Id="ARPURLINFOABOUT">URL for general info about the product</Property>-->
+
+    <Condition Message="You need to be an administrator to install this product.">Privileged</Condition>
+
+<?if $(var.ProcessorArchitecture)=x86 ?>
+    <CustomAction Id="CA_Err32BitMsiOn64BitOS" Error="This setup is only supported on 32-bit Windows installations. For 64-bit Windows, run the 64-bit setup executable." />
+<?endif ?>
+
+    <InstallExecuteSequence>
+<?if $(var.ProcessorArchitecture)=x86 ?>
+      <Custom Action="CA_Err32BitMsiOn64BitOS" After="LaunchConditions">MsiAMD64 OR Intel64</Custom>
+<?endif ?>
+      <Custom Action="SHChangeNotifyCustomAction" Before="InstallFinalize" />
+    </InstallExecuteSequence>
+
+    <InstallUISequence>
+<?if $(var.ProcessorArchitecture)=x86 ?>
+      <Custom Action="CA_Err32BitMsiOn64BitOS" After="LaunchConditions">MsiAMD64 OR Intel64</Custom>
+<?endif ?>
+    </InstallUISequence>
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <Media Id="1" Cabinet="Media.cab" EmbedCab="yes" />
+
+    <Feature Id="DllFileFeature" Title="PNM WIC Image Codec"
+             Description="Core files for the PNM WIC Image Codec."
+             ConfigurableDirectory="INSTALLFOLDER" AllowAdvertise="no" Absent="disallow" Display="expand">
+      <ComponentRef Id="DllFile"/>
+<?if $(var.ProcessorArchitecture)=x64 ?>
+      <ComponentRef Id="DllFile64"/>
+<?endif ?>
+    
+      <Feature Id="PnmFeature" Title="PNM codec"
+               Description="Register PNM codec (.pbm, .pgm, .ppm, .pnm)." 
+               AllowAdvertise="no">
+        <ComponentRef Id="PnmRegistration"/>
+<?if $(var.ProcessorArchitecture)=x64 ?>
+        <ComponentRef Id="PnmRegistration64"/>
+<?endif ?>
+		  </Feature>
+    
+      <Feature Id="TgaFeature" Title="TGA codec"
+             Description="Register TGA codec (.tga)." 
+             AllowAdvertise="no">
+        <ComponentRef Id="TgaRegistration"/>
+<?if $(var.ProcessorArchitecture)=x64 ?>
+        <ComponentRef Id="TgaRegistration64"/>
+<?endif ?>
+		  </Feature>
+    </Feature>
+
+    <Feature Id="ExplorerIntegrationFeature"
+             Title="Windows Explorer integration"
+             Description="Enable thumbnail support and Windows Photo Viewer context menu entries in Windows Explorer."
+             AllowAdvertise="no">
+      <ComponentRef Id="ExplorerIntegration"/>
+    </Feature>
+    
+    <!--<Feature Id="VCRedistFeature" Title="Microsoft Visual C++ 2015 Redistributable"
+             Description="Microsoft Visual C++ 2015 Redistributable is a required component."
+             AllowAdvertise="no" Absent="disallow">
+      <MergeRef Id="VCRedist" />
+<?if $(var.ProcessorArchitecture)=x64 ?>
+      <MergeRef Id="VCRedist64" />
+<?endif ?>
+    </Feature>
+    
+    <DirectoryRef Id="TARGETDIR">
+      <Merge Id="VCRedist" SourceFile="res\x86\Microsoft_VC140_CRT_x86.msm" DiskId="1" Language="0" />
+<?if $(var.ProcessorArchitecture)=x64 ?>
+      <Merge Id="VCRedist64" SourceFile="res\x64\Microsoft_VC140_CRT_x64.msm" DiskId="1" Language="0" />
+<?endif ?>
+    </DirectoryRef>-->
+
+    <UIRef Id="WixUI_FeatureTree_WithExplorerIntegrationDlg" />
+    
+    <WixVariable Id="WixUILicenseRtf" Value="res\license.rtf" />
+    <WixVariable Id="WixUIExclamationIco" Value="res\exclamation.ico" />
+    <WixVariable Id="WixUIInfoIco" Value="res\info.ico" />
+  
+    <Binary Id="SHChangeNotifyCustomActionDll" SourceFile="res\SHChangeNotifyCustomAction.dll" />
+
+    <CustomAction Id="SHChangeNotifyCustomAction" BinaryKey="SHChangeNotifyCustomActionDll"
+                  DllEntry="SHChangeNotifyCustomAction" Execute="deferred" Return="check" HideTarget="no" Impersonate="no" />
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="PNM WIC Image Codec" />
+      </Directory>
+			<Directory Id="ProgramFiles64Folder">
+				<Directory Id="INSTALLFOLDER64" Name="PNM WIC Image Codec" />
+			</Directory>
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+    <Component Id="DllFile" Guid="2A85BF7E-7345-423D-AEA8-0F816A2CE780" Directory="INSTALLFOLDER" Win64="no">
+      <File Id="PnmWicImageCodecDll" Name="PnmWicImageCodec.dll" DiskId="1" Source="res\x86\PnmWicImageCodec.dll" KeyPath="yes" />
+    </Component>
+    
+    <Component Id="DllFile64" Guid="9121534F-FDFB-4809-847C-AF9DD6B2410D" Directory="INSTALLFOLDER64" Win64="yes">
+      <File Id="PnmWicImageCodecDll64" Name="PnmWicImageCodec.dll" DiskId="1" Source="res\x64\PnmWicImageCodec.dll" KeyPath="yes" />
+    </Component>
+      
+    <Component Id="PnmRegistration" Guid="6D7B41B0-E6AF-48C5-ACF5-12631A437B9A" Directory="INSTALLFOLDER" Win64="no">
+      <Class Id="{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}" Context="InprocServer32" Server="PnmWicImageCodecDll" ThreadingModel="both" />
+
+      <RegistryKey Root="HKCR" Key="CLSID\{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}">
+        <RegistryValue Type="string" Name="Author" Value="Christoph Hausner" />
+        <RegistryValue Type="string" Name="ColorManagementVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="ContainerFormat" Value="{04E4B063-AB64-4B87-9822-048E1EFADE26}" />
+        <RegistryValue Type="string" Name="Description" Value="PNM Image Codec for WIC" />
+        <RegistryValue Type="string" Name="FileExtensions" Value=".pbm,.pgm,.ppm,.pnm" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="PNM WIC Image Codec" />
+        <RegistryValue Type="string" Name="MimeTypes" Value="image/x-portable-bitmap,image/x-portable-graymap,image/x-portable-pixmap,image/x-portable-anymap" />
+        <RegistryValue Type="string" Name="SpecVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="Vendor" Value="{AFED144E-1208-4CBE-B085-18F10F14676D}" />
+        <RegistryValue Type="string" Name="Version" Value="$(var.ProductVersion)" />
+        <RegistryValue Type="integer" Name="SupportAnimation" Value="0" />
+        <RegistryValue Type="integer" Name="SupportChromakey" Value="0" />
+        <RegistryValue Type="integer" Name="SupportLossless" Value="1" />
+        <RegistryValue Type="integer" Name="SupportMultiframe" Value="1" />
+
+        <RegistryKey Key="Patterns\0">
+          <RegistryValue Type="integer" Name="Position" Value="0" />
+          <RegistryValue Type="integer" Name="Length" Value="3" />
+          <RegistryValue Type="binary" Name="Pattern" Value="503100" />
+          <RegistryValue Type="binary" Name="Mask" Value="fff8d0" />
+        </RegistryKey>
+
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc905}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc908}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc909}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90b}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90d}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc915}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance\{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}">
+        <RegistryValue Type="string" Name="CLSID" Value="{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="PNM WIC Image Codec" />
+      </RegistryKey>
+    </Component>
+
+    <Component Id="TgaRegistration" Guid="24E8242B-4DAB-4934-AEA9-217DF44B8804" Directory="INSTALLFOLDER" Win64="no">
+      <Class Id="{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}" Context="InprocServer32" Server="PnmWicImageCodecDll" ThreadingModel="both" />
+    
+      <RegistryKey Root="HKCR" Key="CLSID\{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}">
+        <RegistryValue Type="string" Name="Author" Value="Christoph Hausner" />
+        <RegistryValue Type="string" Name="ColorManagementVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="ContainerFormat" Value="{1C0050CC-CA4C-4DCB-A6B6-39075902E958}" />
+        <RegistryValue Type="string" Name="Description" Value="TGA Image Codec for WIC" />
+        <RegistryValue Type="string" Name="FileExtensions" Value=".tga" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="TGA WIC Image Codec" />
+        <RegistryValue Type="string" Name="MimeTypes" Value="image/x-targa,image/x-tga" />
+        <RegistryValue Type="string" Name="SpecVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="Vendor" Value="{AFED144E-1208-4CBE-B085-18F10F14676D}" />
+        <RegistryValue Type="string" Name="Version" Value="$(var.ProductVersion)" />
+        <RegistryValue Type="integer" Name="SupportAnimation" Value="0" />
+        <RegistryValue Type="integer" Name="SupportChromakey" Value="0" />
+        <RegistryValue Type="integer" Name="SupportLossless" Value="1" />
+        <RegistryValue Type="integer" Name="SupportMultiframe" Value="0" />
+
+        <RegistryKey Key="Patterns\0">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0101" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\1">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0002" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\2">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0003" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\3">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0109" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\4">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="000a" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\5">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="000b" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc901}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc902}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc903}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc904}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc909}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90c}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90f}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc910}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc905}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc906}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc907}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc908}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90b}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance\{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}">
+        <RegistryValue Type="string" Name="CLSID" Value="{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="TGA WIC Image Codec" />
+      </RegistryKey>
+    </Component>
+    
+<?if $(var.ProcessorArchitecture)=x64 ?>
+    <Component Id="PnmRegistration64" Guid="DFC7747E-7460-4C85-9B33-E8B99CF81EDD" Directory="INSTALLFOLDER64" Win64="yes">
+      <Class Id="{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}" Context="InprocServer32" Server="PnmWicImageCodecDll64" ThreadingModel="both" />
+      
+      <RegistryKey Root="HKCR" Key="CLSID\{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}">
+        <RegistryValue Type="string" Name="Author" Value="Christoph Hausner" />
+        <RegistryValue Type="string" Name="ColorManagementVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="ContainerFormat" Value="{04E4B063-AB64-4B87-9822-048E1EFADE26}" />
+        <RegistryValue Type="string" Name="Description" Value="PNM Image Codec for WIC" />
+        <RegistryValue Type="string" Name="FileExtensions" Value=".pbm,.pgm,.ppm,.pnm" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="PNM WIC Image Codec" />
+        <RegistryValue Type="string" Name="MimeTypes" Value="image/x-portable-bitmap,image/x-portable-graymap,image/x-portable-pixmap,image/x-portable-anymap" />
+        <RegistryValue Type="string" Name="SpecVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="Vendor" Value="{AFED144E-1208-4CBE-B085-18F10F14676D}" />
+        <RegistryValue Type="string" Name="Version" Value="$(var.ProductVersion)" />
+        <RegistryValue Type="integer" Name="SupportAnimation" Value="0" />
+        <RegistryValue Type="integer" Name="SupportChromakey" Value="0" />
+        <RegistryValue Type="integer" Name="SupportLossless" Value="1" />
+        <RegistryValue Type="integer" Name="SupportMultiframe" Value="1" />
+
+        <RegistryKey Key="Patterns\0">
+          <RegistryValue Type="integer" Name="Position" Value="0" />
+          <RegistryValue Type="integer" Name="Length" Value="3" />
+          <RegistryValue Type="binary" Name="Pattern" Value="503100" />
+          <RegistryValue Type="binary" Name="Mask" Value="fff8d0" />
+        </RegistryKey>
+
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc905}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc908}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc909}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90b}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90d}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc915}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance\{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}">
+        <RegistryValue Type="string" Name="CLSID" Value="{B3FE5BCB-5C20-4A66-8994-6D6A7A654EAE}" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="PNM WIC Image Codec" />
+      </RegistryKey>
+    </Component>
+
+    <Component Id="TgaRegistration64" Guid="C4968565-F46F-466D-9472-82AA9526D045" Directory="INSTALLFOLDER64" Win64="yes">
+      <Class Id="{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}" Context="InprocServer32" Server="PnmWicImageCodecDll64" ThreadingModel="both" />
+    
+      <RegistryKey Root="HKCR" Key="CLSID\{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}">
+        <RegistryValue Type="string" Name="Author" Value="Christoph Hausner" />
+        <RegistryValue Type="string" Name="ColorManagementVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="ContainerFormat" Value="{1C0050CC-CA4C-4DCB-A6B6-39075902E958}" />
+        <RegistryValue Type="string" Name="Description" Value="TGA Image Codec for WIC" />
+        <RegistryValue Type="string" Name="FileExtensions" Value=".tga" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="TGA WIC Image Codec" />
+        <RegistryValue Type="string" Name="MimeTypes" Value="image/x-targa,image/x-tga" />
+        <RegistryValue Type="string" Name="SpecVersion" Value="1.0.0.0" />
+        <RegistryValue Type="string" Name="Vendor" Value="{AFED144E-1208-4CBE-B085-18F10F14676D}" />
+        <RegistryValue Type="string" Name="Version" Value="$(var.ProductVersion)" />
+        <RegistryValue Type="integer" Name="SupportAnimation" Value="0" />
+        <RegistryValue Type="integer" Name="SupportChromakey" Value="0" />
+        <RegistryValue Type="integer" Name="SupportLossless" Value="1" />
+        <RegistryValue Type="integer" Name="SupportMultiframe" Value="0" />
+
+        <RegistryKey Key="Patterns\0">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0101" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\1">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0002" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\2">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0003" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\3">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="0109" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\4">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="000a" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+        <RegistryKey Key="Patterns\5">
+          <RegistryValue Type="integer" Name="Position" Value="1" />
+          <RegistryValue Type="integer" Name="Length" Value="2" />
+          <RegistryValue Type="binary" Name="Pattern" Value="000b" />
+          <RegistryValue Type="binary" Name="Mask" Value="ffff" />
+        </RegistryKey>
+
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc901}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc902}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc903}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc904}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc909}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90c}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90f}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc910}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc905}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc906}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc907}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc908}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="Formats\{6fddc324-4e03-4bfe-b185-3d77768dc90b}" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance\{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}">
+        <RegistryValue Type="string" Name="CLSID" Value="{36CA8E28-C18A-4B27-AB39-4A2A7D57EB69}" />
+        <RegistryValue Type="string" Name="FriendlyName" Value="TGA WIC Image Codec" />
+      </RegistryKey>
+    </Component>
+<?endif ?>
+    
+<?define filetypes=pbm;pgm;ppm;pnm;tga ?>
+
+    <Component Id="ExplorerIntegration" Guid="29B6DA1A-3AC2-4854-92DA-37387DB02EA7" Directory="INSTALLFOLDER" Win64="no">
+      <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\KindMap">
+<?foreach filetype in $(var.filetypes) ?>
+        <RegistryValue Type="string" Name=".$(var.filetype)" Value="picture" />
+<?endforeach ?>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key=".pbm">
+        <RegistryValue Type="string" Value="pbmfile" />
+        <RegistryValue Type="string" Name="Content Type" Value="image/x-portable-bitmap" />   
+        <RegistryValue Type="string" Name="PerceivedType" Value="image" />
+      </RegistryKey>
+      <RegistryKey Root="HKCR" Key="pbmfile">
+        <RegistryValue Type="string" Value="Portable Bit Map" />      
+      </RegistryKey>
+      
+      <RegistryKey Root="HKCR" Key=".pgm">
+        <RegistryValue Type="string" Value="pgmfile" />
+        <RegistryValue Type="string" Name="Content Type" Value="image/x-portable-graymap" />    
+        <RegistryValue Type="string" Name="PerceivedType" Value="image" />
+      </RegistryKey>
+      <RegistryKey Root="HKCR" Key="pgmfile">
+        <RegistryValue Type="string" Value="Portable Gray Map" />      
+      </RegistryKey>
+      
+        <RegistryKey Root="HKCR" Key=".ppm">
+        <RegistryValue Type="string" Value="ppmfile" />
+        <RegistryValue Type="string" Name="Content Type" Value="image/x-portable-pixmap" />   
+        <RegistryValue Type="string" Name="PerceivedType" Value="image" />
+      </RegistryKey>
+      <RegistryKey Root="HKCR" Key="ppmfile">
+        <RegistryValue Type="string" Value="Portable Pix Map" />      
+      </RegistryKey>
+        
+      <RegistryKey Root="HKCR" Key=".pnm">
+        <RegistryValue Type="string" Value="pnmfile" />
+        <RegistryValue Type="string" Name="Content Type" Value="image/x-portable-anymap" />   
+        <RegistryValue Type="string" Name="PerceivedType" Value="image" />
+      </RegistryKey>
+      <RegistryKey Root="HKCR" Key="pnmfile">
+        <RegistryValue Type="string" Value="Portable Any Map" />      
+      </RegistryKey>
+      
+      <RegistryKey Root="HKCR" Key=".tga">
+        <RegistryValue Type="string" Value="tgafile" />
+        <RegistryValue Type="string" Name="Content Type" Value="image/x-targa" />      
+        <RegistryValue Type="string" Name="PerceivedType" Value="image" />
+      </RegistryKey>
+      <RegistryKey Root="HKCR" Key="tgafile">
+        <RegistryValue Type="string" Value="Truevision TGA" />      
+      </RegistryKey>
+    
+<?foreach filetype in $(var.filetypes) ?>
+      <RegistryKey Root="HKCR" Key=".$(var.filetype)">
+        <RegistryKey Key="OpenWithList\PhotoViewer.dll" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="ShellEx\ContextMenuHandlers\ShellImagePreview">
+          <RegistryValue Type="string" Value="{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}" />
+        </RegistryKey>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="SystemFileAssociations\.$(var.filetype)">
+        <RegistryKey Key="OpenWithList\PhotoViewer.dll" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes" />
+        <RegistryKey Key="ShellEx">
+          <RegistryKey Key="ContextMenuHandlers\ShellImagePreview">
+            <RegistryValue Type="string" Value="{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}" />
+          </RegistryKey>
+          <RegistryKey Key="{e357fccd-a995-4576-b01f-234630154e96}">
+            <RegistryValue Type="string" Value="{C7657C4A-9F68-40fa-A4DF-96BC08EB3551}" />
+          </RegistryKey>
+        </RegistryKey>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCR" Key="$(var.filetype)file">
+        <RegistryKey Key="shell">
+          <RegistryKey Key="open">
+            <RegistryValue Type="expandable" Name="MuiVerb" Value="@%ProgramFiles%\Windows Photo Viewer\photoviewer.dll,-3043" />
+            <RegistryKey Key="command">
+              <RegistryValue Type="expandable" Value='%SystemRoot%\System32\rundll32.exe "%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll", ImageView_Fullscreen %1' />
+            </RegistryKey>
+            <RegistryValue Type="string" Name="DropTarget\Clsid" Value="{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}" />
+          </RegistryKey>
+          <RegistryKey Key="printto\command">
+            <RegistryValue Type="expandable" Value='%SystemRoot%\System32\rundll32.exe "%SystemRoot%\System32\shimgvw.dll", ImageView_PrintTo /pt "%1" "%2" "%3" "%4"' />
+          </RegistryKey>
+        </RegistryKey>
+      </RegistryKey>
+<?endforeach ?>
+    </Component>
+	</Fragment>
+
+  <Fragment>
+    <UI Id="WixUI_FeatureTree_WithExplorerIntegrationDlg">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="FeatureTree" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg">NOT Installed</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg">LicenseAccepted = "1"</Publish>
+
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg" Order="2">NOT Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="ExplorerIntegrationDlg">1</Publish>
+
+      <Publish Dialog="ExplorerIntegrationDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg">1</Publish>
+      <Publish Dialog="ExplorerIntegrationDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ExplorerIntegrationDlg" Order="1">NOT Installed OR WixUI_InstallMode = "Change"</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="3">Installed AND PATCH</Publish>
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+
+      <Property Id="ExplorerIntegrationProperty" Value="0" />
+
+      <Dialog Id="ExplorerIntegrationDlg" Width="370" Height="270" Title="!(loc.WelcomeDlg_Title)">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="340" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose if selected file types are registered in Windows Explorer." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Windows Explorer integration" />
+        <Control Id="Text" Type="Text" X="25" Y="70" Width="320" Height="30" Transparent="yes" NoPrefix="yes" 
+                 Text="Check this box if you want to have your selected image codecs registered in Windows Explorer so that thumbnails are displayed and files can be opened with Windows Photo Viewer." />
+        <Control Id="ExplorerIntegration" Type="CheckBox" X="25" Y="115" Width="330" Height="15"
+                 Property="ExplorerIntegrationProperty" CheckBoxValue="1" Text="Windows Explorer integration" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+    </UI>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+</Wix>
